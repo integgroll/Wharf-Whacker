@@ -1,0 +1,9 @@
+Wharf Whacker is a Port knocker that has a few features that I like in a port knocker
+- Time based rotating ports
+- Individual ports per IP address
+
+
+And one feature that I don't like
+- Broken ass ugly code that needed a repo (don't judge me)
+- Not technically released yet
+- Not finished
