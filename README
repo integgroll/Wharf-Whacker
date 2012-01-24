@@ -8,14 +8,11 @@ It is going to have some other features
 - IPTables (you know the part that makes it actually work, rather than just display information)
 - Maybe changing to allow knocks other than just UDP
 - Allow different hashing algorithms based on user overloading
+- Logging, and config files
 
-And a few features that I don't like
+And currently has a few features that I don't like
 - Not technically released yet
 - Not finished
-- Locks up under the "right" conditions
-
-
-
 
 The core code is all located in wharfwhacker.py, inside there you will find two classes that are what you will access most of the time when it comes to using WharfWhacker.
 - WharfWhacker
@@ -24,3 +21,12 @@ The core code is all located in wharfwhacker.py, inside there you will find two 
 The syntax for each is located in the two files
 - wharf.py (the server)
 - whacker.py (the client)
+
+FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
+FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
+FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
+FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
+FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
+FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
+FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
+FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.

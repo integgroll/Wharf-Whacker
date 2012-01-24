@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import socket
 import SocketServer
+import signal
+import sys
 import hashlib
 from time import strftime, gmtime, sleep
 from Queue import Queue
@@ -19,7 +21,11 @@ class WharfWhacker:
     self.banlist = dict()
     self.keepgoing = True
     self.reserved_pool.add_task(self.new_ports)
+
+    while True:    
+      pass
       
+    
   def new_ports(self):
     # This section is developing which ports to use. <- Pro commenting skills bro, no srsly
     while self.keepgoing:
@@ -98,7 +104,7 @@ class WharfWhacker:
     # Where the IPTables code will go
     print ipaddress + "confirmed!"
     
-  def unset(self):
+  def teardown(self):
     self.keepgoing = False
 #WharfWhacker Class is ended here    
 
@@ -174,6 +180,7 @@ class Worker(Thread):
   def __init__(self, tasks):
     Thread.__init__(self)
     self.tasks = tasks #refer this worker to the shared Job Queue
+    self.setDaemon(True)
     self.start()
   
   def run(self):
@@ -200,6 +207,3 @@ class ThreadPool:
   def empty():
     return self.tasks.empty()   
 #ThreadPool Class is ended here       
-    
-
-
