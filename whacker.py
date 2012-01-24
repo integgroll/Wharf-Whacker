@@ -2,7 +2,7 @@
 from wharfwhacker import Whacker
 import socket
 
-whacker = Whacker("1234",[80,443,22],5,"udp")
+whacker = Whacker("172.16.2.128","1234",[80,443,22],5)
 
 whacker.whack("172.16.2.128")
 
