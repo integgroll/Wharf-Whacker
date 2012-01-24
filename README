@@ -2,11 +2,12 @@ Wharf Whacker is a Port knocker that doesn't piss me off, and has the following 
 - Doesn't piss me off
 - Time based rotating ports
 - Individual ports per IP address, this prevents replays
-
+- Very Portable (See doesn't piss me off)
 
 It is going to have some other features
 - IPTables (you know the part that makes it actually work, rather than just display information)
-- Maybe changing to allow knocks other than just TCP
+- Maybe changing to allow knocks other than just UDP
+- Allow different hashing algorithms based on user overloading
 
 And a few features that I don't like
 - Broken ass ugly code that needed a repo (don't judge me)

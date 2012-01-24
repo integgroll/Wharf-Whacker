@@ -2,7 +2,6 @@
 import socket
 import SocketServer
 import scapy
-from scapy.all import *
 import hashlib
 from time import strftime, gmtime, sleep
 from Queue import Queue
@@ -43,21 +42,21 @@ class ThreadPool:
 
 
 class WharfWhacker:
-  def __init__(self,password,safe_ports,authentication_length,packet_type):
+  def __init__(self,ipaddress,password,safe_ports,authentication_length,packet_type):
     self.password = password
     self.start_port = 0
-    self.reserved_pool = ThreadPool(10)
+    self.reserved_pool = ThreadPool(authentication_length*10+1)
+    self.connection_sockets = []
     self.connections = dict()
     self.banlist = dict()
     self.safe_ports = safe_ports
     self.authentication_length = authentication_length
     self.packet_type = packet_type    
     self.keepgoing = True
-    self.server = None
     self.reserved_pool.add_task(self.new_ports)
+
     print "Ports Generated"
     print "Starting Scanner"
-    #self.stream_reader()
         
   def new_ports(self):
     while self.keepgoing:
@@ -69,10 +68,12 @@ class WharfWhacker:
       self.connections = dict()
       print strftime("%Y - %j - %d - %H - %M",gmtime())
       print self.start_port
-      self.reserved_pool.add_task(self.stream_reader)
-      time.sleep((60-int(time.strftime("%S"))))
-      self.server.shutdown()
-  
+      self.reserved_pool.add_task(self.stream_reader,self.start_port)
+      sleep((60-int(strftime("%S"))))
+      for sock in self.connection_sockets:
+        sock.shutdown()
+      self.connection_sockets = []
+        
   def set_initial_port(self,porthash):
     x=0
     while self.start_port == 0 :
@@ -80,8 +81,7 @@ class WharfWhacker:
       if temp_port > 1024 and temp_port not in self.safe_ports:
         self.start_port = temp_port
       x = x + 5
-      
-      
+
   def check_ports(self,ipaddress,port): 
     if ipaddress in self.connections:
       print self.connections[ipaddress]
@@ -93,12 +93,12 @@ class WharfWhacker:
       else:
         del self.connections[ipaddress]
         print "Connection Reset" + ipaddress
-        
     else:
       if self.start_port==port:
         print "Session started, Creating secure ports"
         self.connections[ipaddress] = [1]
         self.generate_secure_ports(ipaddress)
+        print "Secure Ports Created"
       else:
         if port not in self.safe_ports:
           print "Failcamp - banlisting"
@@ -115,17 +115,15 @@ class WharfWhacker:
     while len(self.connections[ipaddress]) < self.authentication_length + 1 :
       temp_port = int(porthash[x:x+4],16)
       if temp_port > 1024:
-        self.connections[ipaddress].append(temp_port)
-      x = x + 5      
-
-  def stream_reader(self):
+        self.connections[ipaddress].append(temp_port)    
+      x = x + 5
+    for port in self.connections[ipaddress]:
+      self.reserved_pool.add_task(self.stream_reader,port)
+      
+  def stream_reader(self,port):
     #This is the function that checks the packet stream for any possible connections
-    self.server = SocketServer.UDPServer(("172.16.2.128",self.start_port),InitialUDPHandler.handler(self))
-    self.server.serve_forever()
-    
-
-  def sniffer(self,callback):
-    sniff(prn=callback, store=0, filter=self.packet_type.lower())
+    self.connection_sockets.append(WharfServer(("172.16.2.128",port),InitialUDPHandler,self))
+    self.connection_sockets[-1].serve_forever()
 
   def allow_ip(self,ipaddress):
     #Where the code goes for the IPTables crap
@@ -137,7 +135,7 @@ class WharfWhacker:
 
 
 class Whacker():
-  def __init__(self,password,authentication_length,packet_type,safe_ports):
+  def __init__(self,password,safe_ports,authentication_length,packet_type):
     self.password = password
     self.authentication_length = authentication_length
     self.packet_type = packet_type
@@ -147,14 +145,17 @@ class Whacker():
     self.generate_ports()
     
   def whack(self,target_ip):
+    first = True
     for i in self.ports:
       print i
-      #a = IP(src=self.ip_address,dst=target_ip)/TCP(dport=i)
-      #send(a)
       s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-      s.sendto("are those pants?",("172.16.2.127",i))
+      s.sendto("are those pants?",("172.16.2.128",i))
+      if first:
+        #We have to sleep here because most servers can't run the hashes for the ip's
+        #AND open new sockets in the time before the next packet shows up.
+        sleep(1)
+        first = False
 
-      
   def obtain_ip(self):
     self.ip_address = "172.16.2.128"
     
@@ -178,14 +179,21 @@ class Whacker():
 #Whacker Class is ended here
 
 
+class WharfServer(SocketServer.UDPServer):
+  def __init__(self, address, handler, wharf):
+    self.wharf = wharf
+    SocketServer.UDPServer.__init__(self, address, handler)
+# WharfServer Class is ended here
+
 class InitialUDPHandler(SocketServer.BaseRequestHandler):
-  def handle(self,wharf):
+  def handle(self):
     data = self.request[0].strip()
-    socket = self.request[1]
+    ip,port = self.request[1].getsockname()
     self.client_address
-    print "Hey there was a connection, shoulda had a print statement earlier"
-    
-    socket.sendto(data.upper(), self.client_address)
+    self.server.wharf.check_ports(ip,port)
+# InitialUDPHandler Class is eneded here
+
+
     
     
 
