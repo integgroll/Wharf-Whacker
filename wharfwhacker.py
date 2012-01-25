@@ -25,13 +25,16 @@ class WharfWhacker:
         
   def start(self):
     #iptables set for WharfWhacker, the readme explains this.
-    subprocess.call("iptables -N WharfWhacker")
-    subprocess.call("iptables -N WharfWhacked")
+    subprocess.call("iptables -N WharfWhacker" , shell = True)
+    subprocess.call("iptables -N WharfWhacked" , shell = True)
+    print "1\n"
     self.add_iptable_rule("INPUT -p udp -j WharfWhacked")
-    self.add_iptable_rule("iptables -A WharfWhacker -p tcp -j DROP")
-    self.add_iptable_rule("iptables -A WharfWhacked -p udp -j ACCEPT")
+    print "2\n"
+    self.add_iptable_rule("WharfWhacker -p tcp -j DROP")
+    print "3\n"
+    self.add_iptable_rule("WharfWhacked -p udp -j ACCEPT")
     for i in self.secured_ports:
-      self.add_iptable_rule("INPUT =p tcp --destination-port " + str(i) + "-j WharfWhacker")
+      self.add_iptable_rule("INPUT -p tcp --destination-port " + str(i) + " -j WharfWhacker")
 
     self.reserved_pool.add_task(self.new_ports)    
     while True:    
@@ -64,7 +67,7 @@ class WharfWhacker:
 
   def check_ports(self,ip_address,port): 
     # Logic hell that deals with the ports, and where they are at in the authentication sequence
-    if ipaddress in self.connections:
+    if ip_address in self.connections:
       print self.connections[ip_address]
       if self.connections[ip_address][self.connections[ip_address][0]] == port:
         #Correct port hit
@@ -121,8 +124,8 @@ class WharfWhacker:
         
   def add_iptable_rule(self,rule):
     # Sadly I have to do it like this so that there are no duplicate rules
-    subprocess.call("iptables -D " + rule)
-    subprocess.call("iptables -A " + rule)
+    subprocess.call("iptables -D " + rule , shell = True)
+    subprocess.call("iptables -I " + rule , shell = True)
 #WharfWhacker Class is ended here    
 
 

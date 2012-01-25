@@ -2,10 +2,11 @@
 from wharfwhacker import Whacker
 import socket
 
-whacker = Whacker("192.168.2.100","1234",[22,6667],[80,443],5)
+ip_address = "172.16.2.158"
+whacker = Whacker(ip_address,"1234",[22,6667],[80,443],5)
 
-whacker.whack("192.168.2.100")
+whacker.whack(ip_address)
 
 #s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#s.sendto("are those pants?",("172.16.2.128",18))
+#s.sendto("are those pants?",(ip_address,18))
 
