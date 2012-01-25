@@ -3,7 +3,7 @@ from wharfwhacker import Whacker
 import socket
 
 ip_address = "172.16.2.158"
-whacker = Whacker(ip_address,"1234",[22,6667],[80,443],5)
+whacker = Whacker("172.16.2.128","1234",[22,6667,4444],[80,443],5)
 
 whacker.whack(ip_address)
 

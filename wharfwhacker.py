@@ -27,11 +27,8 @@ class WharfWhacker:
     #iptables set for WharfWhacker, the readme explains this.
     subprocess.call("iptables -N WharfWhacker" , shell = True)
     subprocess.call("iptables -N WharfWhacked" , shell = True)
-    print "1\n"
     self.add_iptable_rule("INPUT -p udp -j WharfWhacked")
-    print "2\n"
     self.add_iptable_rule("WharfWhacker -p tcp -j DROP")
-    print "3\n"
     self.add_iptable_rule("WharfWhacked -p udp -j ACCEPT")
     for i in self.secured_ports:
       self.add_iptable_rule("INPUT -p tcp --destination-port " + str(i) + " -j WharfWhacker")
@@ -68,7 +65,6 @@ class WharfWhacker:
   def check_ports(self,ip_address,port): 
     # Logic hell that deals with the ports, and where they are at in the authentication sequence
     if ip_address in self.connections:
-      print self.connections[ip_address]
       if self.connections[ip_address][self.connections[ip_address][0]] == port:
         #Correct port hit
         self.connections[ip_address][0] = self.connections[ip_address][0] + 1
@@ -79,17 +75,17 @@ class WharfWhacker:
       else:
         #Incorrect port hit
         del self.connections[ip_address]
-        print "Connection Reset: " + ip_address
+        #print "Connection Reset: " + ip_address
     else:
       if self.start_port==port:
         #Correct start port, creates sockets for other ports
-        print "Session started, Creating secure ports"
+        #print "Session started, Creating secure ports"
         self.connections[ip_address] = [1]
         self.generate_secure_ports(ip_address)
       else:
         if port not in self.safe_ports:
           #totally wrong, nuke the hell out of it with the ban list
-          print "Failcamp - banlisting"
+          #print "Failcamp - banlisting"
           self.ban_ip(ip_address)
           del self.connections[ip_address]
           if ipdaddress in self.banlist:
@@ -143,13 +139,13 @@ class Whacker():
   def whack(self,target_ip):
     # Runs a knock against target server
     for i in self.ports:
-      print i
+      #print i
       s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
       s.sendto("are those pants?",(target_ip,i))
       #We have to sleep here because most servers can't run the hashes for the ip's
       #AND open new sockets in the time before the next packet shows up.
       sleep(0.1)
-    
+    print "Knock Complete, check for entry"
   def generate_ports(self):
     # Generates the ports that the knock will use.
     #Initial port to knock on
