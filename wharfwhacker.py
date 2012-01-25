@@ -9,10 +9,12 @@ from Queue import Queue
 from threading import Thread
 
 class WharfWhacker:
-  def __init__(self,ip_address,password,safe_ports,authentication_length):
+  def __init__(self,ip_address,password,secured_ports,safe_ports,authentication_length):
     self.ip_address = ip_address
     self.password = password
+    self.secured_ports = secured_ports
     self.safe_ports = safe_ports
+    self.ignore_ports = secured_ports + safe_ports
     self.authentication_length = authentication_length 
     self.start_port = 0
     self.reserved_pool = ThreadPool(self.authentication_length*10+1)
@@ -47,7 +49,7 @@ class WharfWhacker:
     x=0
     while self.start_port == 0 :
       temp_port = int(porthash[(x%512):((x+4)%512)],16)
-      if temp_port > 1024 and temp_port not in self.safe_ports:
+      if temp_port > 1024 and temp_port not in self.ignore_ports:
         self.start_port = temp_port
       x = x + 5
 
@@ -89,7 +91,7 @@ class WharfWhacker:
     x = 0
     while len(self.connections[ipaddress]) < self.authentication_length + 1 :
       temp_port = int(porthash[x:x+4],16)
-      if temp_port > 1024:
+      if temp_port > 1024 and temp_port not in self.ignore_ports:
         self.connections[ipaddress].append(temp_port)    
       x = x + 5
     for port in self.connections[ipaddress]:
@@ -110,26 +112,25 @@ class WharfWhacker:
 
 
 class Whacker():
-  def __init__(self,ip_address,password,safe_ports,authentication_length):
+  def __init__(self,ip_address,password,secured_ports,safe_ports,authentication_length):
     self.password = password
     self.authentication_length = authentication_length
+    self.secured_ports = secured_ports
     self.safe_ports = safe_ports
+    self.ignore_ports = secured_ports + safe_ports
     self.ports = []
     self.ip_address = ip_address
     self.generate_ports()
     
   def whack(self,target_ip):
     # Runs a knock against target server
-    first = True
     for i in self.ports:
       print i
       s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
       s.sendto("are those pants?",(target_ip,i))
-      if first:
-        #We have to sleep here because most servers can't run the hashes for the ip's
-        #AND open new sockets in the time before the next packet shows up.
-        sleep(1)
-        first = False
+      #We have to sleep here because most servers can't run the hashes for the ip's
+      #AND open new sockets in the time before the next packet shows up.
+      sleep(0.1)
     
   def generate_ports(self):
     # Generates the ports that the knock will use.
@@ -138,7 +139,7 @@ class Whacker():
     x = 0
     while len(self.ports) < 1 :
       temp_port = int(porthash[x:x+4],16)
-      if temp_port > 1024:
+      if temp_port > 1024 and temp_port not in self.ignore_ports:
         self.ports.append(temp_port)
       x = x + 5
     #Ports that are based on the IP
@@ -146,7 +147,7 @@ class Whacker():
     x=0
     while len(self.ports) < self.authentication_length + 1 :
       temp_port = int(porthash[x:x+4],16)
-      if temp_port > 1024:
+      if temp_port > 1024 and temp_port not in self.ignore_ports:
         self.ports.append(temp_port)
       x = x + 5      
 #Whacker Class is ended here
