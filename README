@@ -30,3 +30,21 @@ FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
 FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
 FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
 FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
+
+
+How the iptables rules work
+
+First we create two new rule chains
+WharfWhacker (This is for accepted ip addresses)
+WharfWhacked (This is the banlist)
+
+From there any udp traffic goes through WharfWhacked, unless it is banned it will go to whatever port it is supposed to.
+Any tcp traffic that is a protected port is sent to the WharfWhacker chain, where unless the ip-address is accepted it will be dropped.
+
+
+
+
+
+
+
+

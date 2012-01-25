@@ -3,6 +3,7 @@ import socket
 import SocketServer
 import signal
 import sys
+import subprocess
 import hashlib
 from time import strftime, gmtime, sleep
 from Queue import Queue
@@ -21,19 +22,27 @@ class WharfWhacker:
     self.connection_sockets = []
     self.connections = dict()
     self.banlist = dict()
-    self.keepgoing = True
-    self.reserved_pool.add_task(self.new_ports)
+        
+  def start(self):
+    #iptables set for WharfWhacker, the readme explains this.
+    subprocess.call("iptables -N WharfWhacker")
+    subprocess.call("iptables -N WharfWhacked")
+    self.add_iptable_rule("INPUT -p udp -j WharfWhacked")
+    self.add_iptable_rule("iptables -A WharfWhacker -p tcp -j DROP")
+    self.add_iptable_rule("iptables -A WharfWhacked -p udp -j ACCEPT")
+    for i in self.secured_ports:
+      self.add_iptable_rule("INPUT =p tcp --destination-port " + str(i) + "-j WharfWhacker")
 
+    self.reserved_pool.add_task(self.new_ports)    
     while True:    
-      pass
-      
+      pass      
     
   def new_ports(self):
     # This section is developing which ports to use. <- Pro commenting skills bro, no srsly
-    while self.keepgoing:
+    while True:
       self.start_port = 0
       self.connections = dict()
-      #Generates the new start port
+      #Generates the new start port and opens it up for reading
       self.generate_initial_port()
       self.reserved_pool.add_task(self.stream_reader,self.start_port)
       #Waits until the start of a new minute
@@ -53,37 +62,37 @@ class WharfWhacker:
         self.start_port = temp_port
       x = x + 5
 
-  def check_ports(self,ipaddress,port): 
+  def check_ports(self,ip_address,port): 
     # Logic hell that deals with the ports, and where they are at in the authentication sequence
     if ipaddress in self.connections:
-      print self.connections[ipaddress]
-      if self.connections[ipaddress][self.connections[ipaddress][0]] == port:
+      print self.connections[ip_address]
+      if self.connections[ip_address][self.connections[ip_address][0]] == port:
         #Correct port hit
-        self.connections[ipaddress][0] = self.connections[ipaddress][0] + 1
-        if self.connections[ipaddress][0] >= self.authentication_length + 1:
+        self.connections[ip_address][0] = self.connections[ip_address][0] + 1
+        if self.connections[ip_address][0] >= self.authentication_length + 1:
           #Fully Authenticated
-          self.allow_ip(ipaddress)
-          del self.connections[ipaddress]
+          self.allow_ip(ip_address)
+          del self.connections[ip_address]
       else:
         #Incorrect port hit
-        del self.connections[ipaddress]
-        print "Connection Reset" + ipaddress
+        del self.connections[ip_address]
+        print "Connection Reset: " + ip_address
     else:
       if self.start_port==port:
         #Correct start port, creates sockets for other ports
         print "Session started, Creating secure ports"
-        self.connections[ipaddress] = [1]
-        self.generate_secure_ports(ipaddress)
-        print "Secure Ports Created"
+        self.connections[ip_address] = [1]
+        self.generate_secure_ports(ip_address)
       else:
         if port not in self.safe_ports:
           #totally wrong, nuke the hell out of it with the ban list
           print "Failcamp - banlisting"
-          del self.connections[ipaddress]
+          self.ban_ip(ip_address)
+          del self.connections[ip_address]
           if ipdaddress in self.banlist:
-            self.banlist[ipaddress] = self.banlist[ipaddress] + 1
+            self.banlist[ip_address] = self.banlist[ip_address] + 1
           else:
-            self.banlist[ipaddress] = 1
+            self.banlist[ip_address] = 1
 
   def generate_secure_ports(self,ipaddress):
     # This is the function that you need to change to generate a list of ports to knock against
@@ -104,10 +113,16 @@ class WharfWhacker:
 
   def allow_ip(self,ipaddress):
     # Where the IPTables code will go
-    print ipaddress + "confirmed!"
+    self.add_iptable_rule("WharfWhacker -p tcp --source " + ipaddress + " -j ACCEPT")
     
-  def teardown(self):
-    self.keepgoing = False
+  def ban_ip(self,ipaddress):
+    # Bans an IP
+    self.add_iptable_rule("WharfWhacked -p udp --source " + ipaddress + " -j DROP")
+        
+  def add_iptable_rule(self,rule):
+    # Sadly I have to do it like this so that there are no duplicate rules
+    subprocess.call("iptables -D " + rule)
+    subprocess.call("iptables -A " + rule)
 #WharfWhacker Class is ended here    
 
 
