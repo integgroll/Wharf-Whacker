@@ -12,11 +12,11 @@ from Queue import Queue
 from threading import Thread
 
 class WharfWhacker:
-  def __init__(self):
+  def __init__(self, config_file = "wharfwhacker.conf"):
     attributes = dict()
 
-    if os.path.isfile("wharfwhacker.conf"):
-      conf = file("wharfwhacker.conf","r").readlines()
+    if os.path.isfile(config_file):
+      conf = file(config_file,"r").readlines()
       for line in conf:
         line = line.rstrip()
         if len(line)>0:
@@ -139,10 +139,10 @@ class WharfWhacker:
 
 
 class Whacker():
-  def __init__(self):
+  def __init__(self, config_file = "wharfwhacker.conf"):
     attributes = dict()
-    if os.path.isfile("wharfwhacker.conf"):
-      conf = file("wharfwhacker.conf","r").readlines()
+    if os.path.isfile(config_file):
+      conf = file(config_file,"r").readlines()
       for line in conf:
         line = line.rstrip()
         if len(line)>0:
