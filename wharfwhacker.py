@@ -5,18 +5,31 @@ import signal
 import sys
 import subprocess
 import hashlib
+import re
+import os
 from time import strftime, gmtime, sleep
 from Queue import Queue
 from threading import Thread
 
 class WharfWhacker:
-  def __init__(self,ip_address,password,secured_ports,safe_ports,authentication_length):
-    self.ip_address = ip_address
-    self.password = password
-    self.secured_ports = secured_ports
-    self.safe_ports = safe_ports
-    self.ignore_ports = secured_ports + safe_ports
-    self.authentication_length = authentication_length 
+  def __init__(self):
+    attributes = dict()
+
+    if os.path.isfile("wharfwhacker.conf"):
+      conf = file("wharfwhacker.conf","r").readlines()
+      for line in conf:
+        line = line.rstrip()
+        if len(line)>0:
+          if line[0] not in ["\n","#"]:
+            temp = line.split(":")
+            attributes[temp[0]] = temp[1].lstrip()
+
+    self.ip_address = attributes['server_address']
+    self.password = attributes['password']
+    self.secured_ports = attributes['protect_ports'].split(",")
+    self.safe_ports = attributes['ignore_ports'].split(",")
+    self.ignore_ports = self.secured_ports + self.safe_ports
+    self.authentication_length = int(attributes['knocks'])
     self.start_port = 0
     self.reserved_pool = ThreadPool(self.authentication_length*10+1)
     self.connection_sockets = []
@@ -126,17 +139,26 @@ class WharfWhacker:
 
 
 class Whacker():
-  def __init__(self,ip_address,password,secured_ports,safe_ports,authentication_length):
-    self.password = password
-    self.authentication_length = authentication_length
-    self.secured_ports = secured_ports
-    self.safe_ports = safe_ports
-    self.ignore_ports = secured_ports + safe_ports
+  def __init__(self):
+    attributes = dict()
+    if os.path.isfile("wharfwhacker.conf"):
+      conf = file("wharfwhacker.conf","r").readlines()
+      for line in conf:
+        line = line.rstrip()
+        if len(line)>0:
+          if line[0] not in ["\n","#"]:
+            temp = line.split(":")
+            attributes[temp[0]] = temp[1].lstrip()
+    self.ip_address = attributes['local_ip']
+    self.password = attributes['password']
+    self.secured_ports = attributes['protect_ports'].split(",")
+    self.safe_ports = attributes['ignore_ports'].split(",")
+    self.authentication_length = int(attributes['knocks'])
+    self.ignore_ports = self.secured_ports + self.safe_ports
     self.ports = []
-    self.ip_address = ip_address
-    self.generate_ports()
     
   def whack(self,target_ip):
+    self.generate_ports()
     # Runs a knock against target server
     for i in self.ports:
       #print i
@@ -163,7 +185,7 @@ class Whacker():
       temp_port = int(porthash[x:x+4],16)
       if temp_port > 1024 and temp_port not in self.ignore_ports:
         self.ports.append(temp_port)
-      x = x + 5      
+      x = x + 5  
 #Whacker Class is ended here
 
 #The following four classes are all part of the setup so that the other things can run happily.
