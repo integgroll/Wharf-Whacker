@@ -7,6 +7,7 @@ import subprocess
 import hashlib
 import re
 import os
+import logging
 from time import strftime, gmtime, sleep
 from Queue import Queue
 from threading import Thread
@@ -34,7 +35,7 @@ class WharfWhacker:
     self.reserved_pool = ThreadPool(self.authentication_length*10+1)
     self.connection_sockets = []
     self.connections = dict()
-    self.banlist = dict()
+    self.ban_list = dict()
         
   def start(self):
     #iptables set for WharfWhacker, the readme explains this.
@@ -83,16 +84,17 @@ class WharfWhacker:
         self.connections[ip_address][0] = self.connections[ip_address][0] + 1
         if self.connections[ip_address][0] >= self.authentication_length + 1:
           #Fully Authenticated
+          ## log so and so ip has been correctly authed, log away
           self.allow_ip(ip_address)
           del self.connections[ip_address]
       else:
         #Incorrect port hit
+        self.ban_check(ip_address)
         del self.connections[ip_address]
-        #print "Connection Reset: " + ip_address
     else:
       if self.start_port==port:
         #Correct start port, creates sockets for other ports
-        #print "Session started, Creating secure ports"
+        ## log the correct port has been started on said IP
         self.connections[ip_address] = [1]
         self.generate_secure_ports(ip_address)
       else:
@@ -101,21 +103,18 @@ class WharfWhacker:
           #print "Failcamp - banlisting"
           self.ban_ip(ip_address)
           del self.connections[ip_address]
-          if ipdaddress in self.banlist:
-            self.banlist[ip_address] = self.banlist[ip_address] + 1
-          else:
-            self.banlist[ip_address] = 1
+          self.ban_check(ip_address)
 
-  def generate_secure_ports(self,ipaddress):
+  def generate_secure_ports(self,ip_address):
     # This is the function that you need to change to generate a list of ports to knock against
-    porthash = hashlib.sha512(ipaddress + self.password+strftime("%Y - %j - %d - %H - %M",gmtime())).hexdigest()  
+    porthash = hashlib.sha512(ip_address + self.password+strftime("%Y - %j - %d - %H - %M",gmtime())).hexdigest()  
     x = 0
-    while len(self.connections[ipaddress]) < self.authentication_length + 1 :
+    while len(self.connections[ip_address]) < self.authentication_length + 1 :
       temp_port = int(porthash[x:x+4],16)
       if temp_port > 1024 and temp_port not in self.ignore_ports:
-        self.connections[ipaddress].append(temp_port)    
+        self.connections[ip_address].append(temp_port)    
       x = x + 5
-    for port in self.connections[ipaddress]:
+    for port in self.connections[ip_address]:
       self.reserved_pool.add_task(self.stream_reader,port)
       
   def stream_reader(self,port):
@@ -123,18 +122,30 @@ class WharfWhacker:
     self.connection_sockets.append(WharfServer((self.ip_address,port),InitialUDPHandler,self))
     self.connection_sockets[-1].serve_forever()
 
-  def allow_ip(self,ipaddress):
+  def allow_ip(self,ip_address):
     # Where the IPTables code will go
-    self.add_iptable_rule("WharfWhacker -p tcp --source " + ipaddress + " -j ACCEPT")
+    self.add_iptable_rule("WharfWhacker -p tcp --source " + ip_address + " -j ACCEPT")
     
-  def ban_ip(self,ipaddress):
+  def ban_ip(self,ip_address):
     # Bans an IP
-    self.add_iptable_rule("WharfWhacked -p udp --source " + ipaddress + " -j DROP")
+    self.add_iptable_rule("WharfWhacked -p udp --source " + ip_address + " -j DROP")
         
   def add_iptable_rule(self,rule):
     # Sadly I have to do it like this so that there are no duplicate rules
+    # Seriously bro, you have to come up with a different way to do this it is rather chumpy and you know it.
     subprocess.call("iptables -D " + rule , shell = True)
     subprocess.call("iptables -I " + rule , shell = True)
+
+  def ban_check(self,ip_address):
+    # Applying the attempts until ban functions
+    if ip_address in self.ban_list:
+      self.ban_list[ip_address] = self.ban_list[ip_address] + 1
+      if self.ban_list >= self.mistake_threshhold:
+        self.ban_ip(ip_address)
+    else:
+      self.ban_list[ip_address] = 1
+      
+  
 #WharfWhacker Class is ended here    
 
 

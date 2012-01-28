@@ -8,7 +8,7 @@ It is going to have some other features
 - IPTables (you know the part that makes it actually work, rather than just display information)
 - Maybe changing to allow knocks other than just UDP
 - Allow different hashing algorithms based on user overloading
-- Logging, and config files
+- Logging
 
 And currently has a few features that I don't like
 - Not technically released yet
