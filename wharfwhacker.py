@@ -29,6 +29,7 @@ class WharfWhacker:
     self.password = attributes['password']
     self.secured_ports = attributes['protect_ports'].split(",")
     self.safe_ports = attributes['ignore_ports'].split(",")
+    self.whack_threshhold = int(attributes['whack_threshhold'])
     self.ignore_ports = self.secured_ports + self.safe_ports
     self.authentication_length = int(attributes['knocks'])
     self.start_port = 0
@@ -140,7 +141,7 @@ class WharfWhacker:
     # Applying the attempts until ban functions
     if ip_address in self.ban_list:
       self.ban_list[ip_address] = self.ban_list[ip_address] + 1
-      if self.ban_list >= self.mistake_threshhold:
+      if self.ban_list >= self.whack_threshhold:
         self.ban_ip(ip_address)
     else:
       self.ban_list[ip_address] = 1
