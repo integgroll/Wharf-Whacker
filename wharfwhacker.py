@@ -56,7 +56,7 @@ class WharfWhacker:
       responses, blank, exceptions = select.select(self.connection_sockets,[],self.connection_sockets,59)
       for response in responses:
         conn , addr = response.accept()
-        self.check_ports(response.getpeername()[0],response.getsockname()[1])
+        self.check_ports(conn.getpeername()[0],conn.getsockname()[1])
                
   def check_ports(self,ip_address,port): 
     # Logic hell that deals with the ports, and where they are at in the authentication sequence
