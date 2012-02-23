@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import socket
-import SocketServer
+import select
 import signal
 import sys
 import subprocess
@@ -32,12 +32,12 @@ class WharfWhacker:
     self.whack_threshhold = int(attributes['whack_threshhold'])
     self.ignore_ports = self.secured_ports + self.safe_ports
     self.authentication_length = int(attributes['knocks'])
-    self.start_port = 0
-    self.reserved_pool = ThreadPool(self.authentication_length*10+1)
     self.connection_sockets = []
+    self.check_ports = []
+    self.start_port = 0
     self.connections = dict()
     self.ban_list = dict()
-        
+
   def start(self):
     #iptables set for WharfWhacker, the readme explains this.
     subprocess.call("iptables -N WharfWhacker" , shell = True)
@@ -47,36 +47,16 @@ class WharfWhacker:
     self.add_iptable_rule("WharfWhacked -p udp -j ACCEPT")
     for i in self.secured_ports:
       self.add_iptable_rule("INPUT -p tcp --destination-port " + str(i) + " -j WharfWhacker")
-
-    self.reserved_pool.add_task(self.new_ports)    
-    while True:    
-      pass      
-    
-  def new_ports(self):
-    # This section is developing which ports to use. <- Pro commenting skills bro, no srsly
+      
     while True:
-      self.start_port = 0
-      self.connections = dict()
-      #Generates the new start port and opens it up for reading
-      self.generate_initial_port()
-      self.reserved_pool.add_task(self.stream_reader,self.start_port)
-      #Waits until the start of a new minute
-      sleep((60-int(strftime("%S"))))
-      #Culls the start socket, and the other sockets created over the past minute due to connection attempts
-      for sock in self.connection_sockets:
-        sock.shutdown()
-      self.connection_sockets = []
-        
-  def generate_initial_port(self):
-    # Uses the porthash that was generated
-    porthash = hashlib.sha512(self.password+strftime("%Y - %j - %d - %H - %M",gmtime())).hexdigest()
-    x=0
-    while self.start_port == 0 :
-      temp_port = int(porthash[(x%512):((x+4)%512)],16)
-      if temp_port > 1024 and temp_port not in self.ignore_ports:
-        self.start_port = temp_port
-      x = x + 5
-
+      if (60-int(strftime("%S"))) < 1 or self.start_port == 0:
+        self.new_ports()
+      #Code that actually operates things
+      print self.connection_sockets
+      responses, blank, exceptions = select.select(self.connection_sockets,[],self.connection_sockets,59)
+      for response in responses:
+        self.check_ports(response.getpeername()[0],response.getsockname()[1])
+               
   def check_ports(self,ip_address,port): 
     # Logic hell that deals with the ports, and where they are at in the authentication sequence
     if ip_address in self.connections:
@@ -105,6 +85,31 @@ class WharfWhacker:
           self.ban_ip(ip_address)
           del self.connections[ip_address]
           self.ban_check(ip_address)
+    
+  def new_ports(self):
+    # This section is developing which ports to use. <- Pro commenting skills bro, no srsly
+    self.start_port = 0
+    self.connections = dict()
+    self.check_ports = []
+    #Culls the start socket, and the other sockets created over the past minute due to connection attempts
+    for sock in self.connection_sockets:
+      sock.shutdown()
+    self.connection_sockets = []
+    #Generates the new start port and opens it up for reading
+    self.generate_initial_port()
+    
+    
+  def generate_initial_port(self):
+    # Uses the porthash that was generated
+    porthash = hashlib.sha512(self.password+strftime("%Y - %j - %d - %H - %M",gmtime())).hexdigest()
+    x=0
+    while self.start_port == 0 :
+      temp_port = int(porthash[(x%512):((x+4)%512)],16)
+      if temp_port > 1024 and temp_port not in self.ignore_ports:
+        self.start_port = temp_port
+      x = x + 5
+    print self.start_port
+    self.use_port(self.start_port)      
 
   def generate_secure_ports(self,ip_address):
     # This is the function that you need to change to generate a list of ports to knock against
@@ -116,13 +121,22 @@ class WharfWhacker:
         self.connections[ip_address].append(temp_port)    
       x = x + 5
     for port in self.connections[ip_address]:
-      self.reserved_pool.add_task(self.stream_reader,port)
-      
-  def stream_reader(self,port):
-    # Creates a WharfServer to listen on a specific port
-    self.connection_sockets.append(WharfServer((self.ip_address,port),InitialUDPHandler,self))
-    self.connection_sockets[-1].serve_forever()
-
+      self.use_port(port)
+  
+  def use_port(self,port):
+    if port not in self.check_ports:
+      temp = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+      temp.setblocking(0)
+      temp.bind((self.ip_address,port))
+      #self.connection_sockets.append(temp)
+      temp.listen(2)
+      self.connection_sockets.append(temp.accept()[0])
+      #self.connection_sockets[-1].listen(2)
+      self.check_ports.append(port)
+      print "ports in use"
+    
+        
+        
   def allow_ip(self,ip_address):
     # Where the IPTables code will go
     self.add_iptable_rule("WharfWhacker -p tcp --source " + ip_address + " -j ACCEPT")
@@ -136,6 +150,9 @@ class WharfWhacker:
     # Seriously bro, you have to come up with a different way to do this it is rather chumpy and you know it.
     subprocess.call("iptables -D " + rule , shell = True)
     subprocess.call("iptables -I " + rule , shell = True)
+    
+      
+      
 
   def ban_check(self,ip_address):
     # Applying the attempts until ban functions
@@ -174,8 +191,9 @@ class Whacker():
     # Runs a knock against target server
     for i in self.ports:
       #print i
-      s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-      s.sendto("are those pants?",(target_ip,i))
+      s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      s.connect((target_ip,i))
+#      s.sendto("are those pants?",(target_ip,i))
       #We have to sleep here because most servers can't run the hashes for the ip's
       #AND open new sockets in the time before the next packet shows up.
       sleep(0.1)
@@ -204,13 +222,17 @@ class Whacker():
 #The following two classes are part of the setup so that the handlers that hold the SocketServers 
 #can access the classes that they are supposed to so they can actually check and ensure ports are 
 #accessed in the correct order by the correct IP.
-class WharfServer(SocketServer.UDPServer):
+
+##THIS IS IN THE PROCESS OF BEING REWRITTEN BECAUSE I THINK THE OTHER WAY WAS OVERUSING RESOURCES LIKE A JERK
+class WharfServer():
   def __init__(self, address, handler, wharf):
     self.wharf = wharf
-    SocketServer.UDPServer.__init__(self, address, handler)
+    self.socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    self.socket.bind(address)
+    self.socket.listen(1)
 # WharfServer Class is ended here
 
-class InitialUDPHandler(SocketServer.BaseRequestHandler):
+class InitialUDPHandler():
   def handle(self):
     data = self.request[0].strip()
     ip,port = self.request[1].getsockname()
