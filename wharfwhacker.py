@@ -130,7 +130,8 @@ class WharfWhacker:
       temp.bind((self.ip_address,port))
       #self.connection_sockets.append(temp)
       temp.listen(2)
-      self.connection_sockets.append(temp.accept()[0])
+      sock,addr = temp.accept()
+      self.connection_sockets.append(sock)
       #self.connection_sockets[-1].listen(2)
       self.check_ports.append(port)
       print "ports in use"
