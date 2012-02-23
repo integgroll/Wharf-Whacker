@@ -55,6 +55,7 @@ class WharfWhacker:
       print self.connection_sockets
       responses, blank, exceptions = select.select(self.connection_sockets,[],self.connection_sockets,59)
       for response in responses:
+        conn , addr = response.accept()
         self.check_ports(response.getpeername()[0],response.getsockname()[1])
                
   def check_ports(self,ip_address,port): 
@@ -128,11 +129,8 @@ class WharfWhacker:
       temp = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
       temp.setblocking(0)
       temp.bind((self.ip_address,port))
-      #self.connection_sockets.append(temp)
-      temp.listen(2)
-      sock,addr = temp.accept()
-      self.connection_sockets.append(sock)
-      #self.connection_sockets[-1].listen(2)
+      self.connection_sockets.append(temp)
+      self.connection_sockets[-1].listen(2)
       self.check_ports.append(port)
       print "ports in use"
     
