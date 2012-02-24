@@ -54,7 +54,7 @@ class WharfWhacker:
         self.new_ports()
       #Code that actually operates things
       print self.connection_sockets
-      responses, blank, exceptions = select.select(self.connection_sockets,[],self.connection_sockets,59)
+      responses, blank, exceptions = select.select(self.connection_sockets,[],self.connection_sockets,1)
       for response in responses:
         if response in self.connection_sockets:
           connection , addr = response.accept()
