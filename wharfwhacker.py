@@ -53,8 +53,7 @@ class WharfWhacker:
           connection , addr = response.recvfrom(100)
           self.check_ports(addr[0],response.getsockname()[1])
           responses.append(connection)
-
-               
+            
   def check_ports(self,ip_address,port): 
     # Checking Ports
     # Logic hell that deals with the ports, and where they are at in the authentication sequence
@@ -64,7 +63,6 @@ class WharfWhacker:
         self.connections[ip_address][0] = self.connections[ip_address][0] + 1
         if self.connections[ip_address][0] >= self.authentication_length + 1:
           #Fully Authenticated
-          ## log so and so ip has been correctly authed, log away
           self.allow_ip(ip_address)
           del self.connections[ip_address]
       else:
@@ -74,7 +72,6 @@ class WharfWhacker:
     else:
       if self.start_port==port:
         #Correct start port, creates sockets for other ports
-        ## log the correct port has been started on said IP
         self.connections[ip_address] = [1]
         self.generate_secure_ports(ip_address)
       else:
@@ -96,7 +93,6 @@ class WharfWhacker:
     self.connection_sockets = []
     #Generates the new start port and opens it up for reading
     self.generate_initial_port()
-    
     
   def generate_initial_port(self):
     # Uses the porthash that was generated
@@ -187,6 +183,7 @@ class Whacker():
       #AND open new sockets in the time before the next packet shows up.
       sleep(0.01)
     print "Knock Complete, check for entry"
+    
   def generate_ports(self):
     # Generates the ports that the knock will use.
     #Initial port to knock on
