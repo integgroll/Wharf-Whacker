@@ -120,8 +120,8 @@ class WharfWhacker:
   def use_port(self,port):
     if port not in self.check_these_ports:
       temp = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+      temp.bind((self.ip_address,port))
       self.connection_sockets.append(temp)
-      self.connection_sockets[-1].bind((self.ip_address,port))
       self.check_these_ports.append(port)
     
         
