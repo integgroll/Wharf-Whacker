@@ -33,7 +33,7 @@ class WharfWhacker:
     self.ignore_ports = self.secured_ports + self.safe_ports
     self.authentication_length = int(attributes['knocks'])
     self.connection_sockets = []
-    self.check_ports = []
+    self.check_these_ports = []
     self.start_port = 0
     self.connections = dict()
     self.ban_list = dict()
@@ -49,17 +49,22 @@ class WharfWhacker:
       self.add_iptable_rule("INPUT -p tcp --destination-port " + str(i) + " -j WharfWhacker")
       
     while True:
+      print "Looped"
       if (60-int(strftime("%S"))) < 1 or self.start_port == 0:
         self.new_ports()
       #Code that actually operates things
       print self.connection_sockets
       responses, blank, exceptions = select.select(self.connection_sockets,[],self.connection_sockets,59)
       for response in responses:
-        conn , addr = response.accept()
-        temp_port = conn.getsockname()
-        self.check_ports(addr[0],temp_port[1])
+        if response in self.connection_sockets:
+          connection , addr = response.accept()
+          print self
+          self.check_ports(addr[0],connection.getsockname()[1])
+          responses.append(connection)
+
                
   def check_ports(self,ip_address,port): 
+    print "Checking Ports"
     # Logic hell that deals with the ports, and where they are at in the authentication sequence
     if ip_address in self.connections:
       if self.connections[ip_address][self.connections[ip_address][0]] == port:
@@ -92,7 +97,7 @@ class WharfWhacker:
     # This section is developing which ports to use. <- Pro commenting skills bro, no srsly
     self.start_port = 0
     self.connections = dict()
-    self.check_ports = []
+    self.check_these_ports = []
     #Culls the start socket, and the other sockets created over the past minute due to connection attempts
     for sock in self.connection_sockets:
       sock.shutdown()
@@ -126,13 +131,13 @@ class WharfWhacker:
       self.use_port(port)
   
   def use_port(self,port):
-    if port not in self.check_ports:
+    if port not in self.check_these_ports:
       temp = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
       temp.setblocking(0)
       temp.bind((self.ip_address,port))
       self.connection_sockets.append(temp)
       self.connection_sockets[-1].listen(2)
-      self.check_ports.append(port)
+      self.check_these_ports.append(port)
       print "ports in use"
     
         
