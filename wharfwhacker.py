@@ -24,6 +24,8 @@ class WharfWhacker:
     self.password = attributes['password']
     self.secured_ports = attributes['protect_ports'].split(",")
     self.safe_ports = attributes['ignore_ports'].split(",")
+    self.white_list = attributes['white_list'].split(",")
+    self.black_list = attributes['black_list'].split(",")
     self.whack_threshhold = int(attributes['whack_threshhold'])
     self.ignore_ports = self.secured_ports + self.safe_ports
     self.authentication_length = int(attributes['knocks'])
@@ -38,10 +40,15 @@ class WharfWhacker:
     subprocess.call("iptables -N WharfWhacker" , shell = True)
     subprocess.call("iptables -N WharfWhacked" , shell = True)
     self.add_iptable_rule("INPUT -p udp -j WharfWhacked")
-    self.add_iptable_rule("WharfWhacker -p tcp -j DROP")
+    self.add_iptable_rule("WharfWhacker -p tcp -j REJECT")
     self.add_iptable_rule("WharfWhacked -p udp -j ACCEPT")
     for i in self.secured_ports:
       self.add_iptable_rule("INPUT -p tcp --destination-port " + str(i) + " -j WharfWhacker")
+    #Take care of the white and black lists
+    for i in self.black_list:
+      self.add_iptable_rule("WharfWhacker -p tcp --source " + i.strip() + " -j ACCEPT")      
+    for i in self.black_list:
+      self.add_iptable_rule("WharfWhacked -p udp --source " + i.strip() + " -j REJECT")
       
     while True:
       if (int(strftime("%S"))) <= 5 or self.start_port == 0:
@@ -109,7 +116,7 @@ class WharfWhacker:
   def generate_secure_ports(self,ip_address):
     # This is the function that you need to change to generate a list of ports to knock against
 #    porthash = hashlib.sha512(ip_address + self.password+strftime("%Y - %j - %d - %H - %M",gmtime())).hexdigest()
-    porthash = HMACSHA(self.password,self.ip_address + strftime("%Y - %j - %d - %H - %M",gmtime()),512).hexdigest()
+    porthash = HMACSHA(self.password,ip_address + strftime("%Y - %j - %d - %H - %M",gmtime()),512).hexdigest()
     x = 0
     while len(self.connections[ip_address]) < self.authentication_length + 1 :
       temp_port = int(porthash[x:x+4],16)
@@ -134,7 +141,7 @@ class WharfWhacker:
     
   def ban_ip(self,ip_address):
     # Bans an IP
-    self.add_iptable_rule("WharfWhacked -p udp --source " + ip_address + " -j DROP")
+    self.add_iptable_rule("WharfWhacked -p udp --source " + ip_address + " -j REJECT")
     #print("Banning IP: " + ip_address, file=sys.stderr)
     print >> sys.stderr, "Banning IP: " + ip_address
         
