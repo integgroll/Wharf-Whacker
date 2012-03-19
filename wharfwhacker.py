@@ -45,7 +45,7 @@ class WharfWhacker:
     for i in self.secured_ports:
       self.add_iptable_rule("INPUT -p tcp --destination-port " + str(i) + " -j WharfWhacker")
     #Take care of the white and black lists
-    for i in self.black_list:
+    for i in self.white_list:
       self.add_iptable_rule("WharfWhacker -p tcp --source " + i.strip() + " -j ACCEPT")      
     for i in self.black_list:
       self.add_iptable_rule("WharfWhacked -p udp --source " + i.strip() + " -j REJECT")
