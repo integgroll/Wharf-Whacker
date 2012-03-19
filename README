@@ -1,13 +1,10 @@
-Wharf Whacker is a Port knocker that doesn't piss me off, and has the following features
-- Doesn't piss me off
-- Time based rotating ports
+Wharf Whacker is a Port knocking suite, it was designed to have the following features
+- Python library for use in other projects
+- Time based rotating ports (SHA512 HMAC)
 - Individual ports per IP address, this prevents replays
-- Portable (See doesn't piss me off)
+- Portable (you only need pyton and iptables installed)
 
 It is going to have some other features
-- IPTables (you know the part that makes it actually work, rather than just display information)
-- Maybe changing to allow knocks other than just UDP
-- Allow different hashing algorithms based on user overloading
 - Logging
 
 And currently has a few features that I don't like
@@ -23,14 +20,6 @@ The syntax for each is located in the two files
 - whacker.py (the client)
 
 FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
-FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
-FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
-FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
-FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
-FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
-FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
-FOR THE LOVE OF GOD CHANGE THE DEFAULT PASSWORD.
-
 
 How the iptables rules work
 
@@ -40,11 +29,4 @@ WharfWhacked (This is the banlist)
 
 From there any udp traffic goes through WharfWhacked, unless it is banned it will go to whatever port it is supposed to.
 Any tcp traffic that is a protected port is sent to the WharfWhacker chain, where unless the ip-address is accepted it will be dropped.
-
-
-
-
-
-
-
 
