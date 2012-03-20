@@ -103,8 +103,7 @@ class WharfWhacker:
     
   def generate_initial_port(self):
     # Uses the porthash that was generated
-#    porthash = hashlib.sha512(self.password+strftime("%Y - %j - %d - %H - %M",gmtime())).hexdigest()
-    porthash = HMACSHA(self.password,strftime("%Y - %j - %d - %H - %M",gmtime()),512).hexdigest()
+    porthash = HMACSHA(self.password,strftime("%Y - %m - %d - %H - %M",gmtime()),512).hexdigest()
     x=0
     while self.start_port == 0 :
       temp_port = int(porthash[(x%512):((x+4)%512)],16)
@@ -115,8 +114,7 @@ class WharfWhacker:
 
   def generate_secure_ports(self,ip_address):
     # This is the function that you need to change to generate a list of ports to knock against
-#    porthash = hashlib.sha512(ip_address + self.password+strftime("%Y - %j - %d - %H - %M",gmtime())).hexdigest()
-    porthash = HMACSHA(self.password,ip_address + strftime("%Y - %j - %d - %H - %M",gmtime()),512).hexdigest()
+    porthash = HMACSHA(self.password,ip_address + strftime("%Y - %m - %d - %H - %M",gmtime()),512).hexdigest()
     x = 0
     while len(self.connections[ip_address]) < self.authentication_length + 1 :
       temp_port = int(porthash[x:x+4],16)
@@ -194,8 +192,7 @@ class Whacker():
   def generate_ports(self):
     # Generates the ports that the knock will use.
     #Initial port to knock on
-#    porthash = hashlib.sha512(self.password+strftime("%Y - %j - %d - %H - %M",gmtime())).hexdigest()
-    porthash = HMACSHA(self.password,strftime("%Y - %j - %d - %H - %M",gmtime()),512).hexdigest()
+    porthash = HMACSHA(self.password,strftime("%Y - %m - %d - %H - %M",gmtime()),512).hexdigest()
     x = 0
     while len(self.ports) < 1 :
       temp_port = int(porthash[x:x+4],16)
@@ -203,8 +200,7 @@ class Whacker():
         self.ports.append(temp_port)
       x = x + 5
     #Ports that are based on the IP
-#    porthash = hashlib.sha512(self.ip_address + self.password+strftime("%Y - %j - %d - %H - %M",gmtime())).hexdigest()
-    porthash = HMACSHA(self.password,self.ip_address + strftime("%Y - %j - %d - %H - %M",gmtime()),512).hexdigest()
+    porthash = HMACSHA(self.password,self.ip_address + strftime("%Y - %m - %d - %H - %M",gmtime()),512).hexdigest()
     x=0
     while len(self.ports) < self.authentication_length + 1 :
       temp_port = int(porthash[x:x+4],16)
@@ -217,20 +213,17 @@ class HMACSHA:
   def __init__(self,key,msg,length=512):
     if length==512:
       self.outer = hashlib.sha512()
-    if length==160:
-      self.outer = hashlib.sha1()
-      
+    if length==256:
+      self.outer = hashlib.sha256()
     self.inner = self.outer.copy()
     blocksize = 64
     xrange_size = 256            
     self.digest_size = self.inner.digest_size
-    
     if len(key) > blocksize:
       if length == 512:
         key = hashlib.sha512(key).digest()
-      if length == 120:
-        key = hashlib.sha1(key).digest()
-
+      if length == 256:
+        key = hashlib.sha256(key).digest()
     key = key + chr(0) * (blocksize - len(key))
     trans_5C = "".join ([chr(x ^ 0x5c) for x in xrange(xrange_size)])
     trans_36 = "".join ([chr(x ^ 0x36) for x in xrange(xrange_size)])
@@ -243,4 +236,3 @@ class HMACSHA:
     
   def hexdigest(self):
     return self.ret.hexdigest()
-
