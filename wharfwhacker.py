@@ -6,6 +6,7 @@ import subprocess
 import hashlib
 import hmac
 import os
+import random
 from time import strftime, gmtime, sleep
 
 class WharfWhacker:
@@ -30,6 +31,8 @@ class WharfWhacker:
     self.whack_threshhold = int(attributes['whack_threshhold'])
     self.ignore_ports = self.secured_ports + self.safe_ports
     self.authentication_length = int(attributes['knocks'])
+    if attributes['auth_token_key'] != "":
+      self.auth_token_key = attributes['auth_token_key'].decode("hex")
     self.connection_sockets = []
     self.check_these_ports = []
     self.start_port = 0
@@ -104,7 +107,7 @@ class WharfWhacker:
     
   def generate_initial_port(self):
     # Uses the porthash that was generated
-    porthash = hmac.new(self.password,strftime("%Y - %m - %d - %H - %M",gmtime()),hashlib.sha512).hexdigest()
+    porthash = hmac.new(self.password,strftime("%Y - %m - %d - %H - %M",gmtime())+self.auth_token_value(),hashlib.sha512).hexdigest()
     x=0
     while self.start_port == 0 :
       temp_port = int(porthash[(x%512):((x+4)%512)],16)
@@ -115,7 +118,7 @@ class WharfWhacker:
 
   def generate_secure_ports(self,ip_address):
     # This is the function that you need to change to generate a list of ports to knock against
-    porthash = hmac.new(self.password,ip_address + strftime("%Y - %m - %d - %H - %M",gmtime()),hashlib.sha512).hexdigest()
+    porthash = hmac.new(self.password,ip_address + strftime("%Y - %m - %d - %H - %M",gmtime())+self.auth_token_value(),hashlib.sha512).hexdigest()
     x = 0
     while len(self.connections[ip_address]) < self.authentication_length + 1 :
       temp_port = int(porthash[x:x+4],16)
@@ -158,6 +161,13 @@ class WharfWhacker:
         self.ban_ip(ip_address)
     else:
       self.ban_list[ip_address] = 1
+      
+  def auth_token_value(self):
+    if self.auth_token_key:
+      return hmac.new(self.auth_token_key,strftime("%Y - %m - %d - %H - %M",gmtime()),hashlib.sha256).hexdigest()[0:8]
+    else:
+      return ""
+    
 #WharfWhacker Class is ended here    
 
 class Whacker():
@@ -179,10 +189,13 @@ class Whacker():
     self.ignore_ports = self.secured_ports + self.safe_ports
     self.ports = []
     
-  def whack(self,target_ip):
-    self.generate_ports()
+  def whack(self,target_ip,auth_key=""):
+    self.generate_ports(auth_key)
     # Runs a knock against target server
     for i in self.ports:
+      confusion = ""
+      for j in range(0,random.randint(10,300)):
+        confusion += chr(random.randint(0,255))      
       s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
       s.sendto("are those pants?",(target_ip,i))
       #We have to sleep here because most servers can't run the hashes for the ip's
@@ -190,10 +203,10 @@ class Whacker():
       sleep(0.01)
     print "Knock Complete, check for entry"
     
-  def generate_ports(self):
+  def generate_ports(self,auth_key=""):
     # Generates the ports that the knock will use.
     #Initial port to knock on
-    porthash = hmac.new(self.password,strftime("%Y - %m - %d - %H - %M",gmtime()),hashlib.sha512).hexdigest()
+    porthash = hmac.new(self.password,strftime("%Y - %m - %d - %H - %M",gmtime())+auth_key,hashlib.sha512).hexdigest()
     x = 0
     while len(self.ports) < 1 :
       temp_port = int(porthash[x:x+4],16)
@@ -201,12 +214,11 @@ class Whacker():
         self.ports.append(temp_port)
       x = x + 5
     #Ports that are based on the IP
-    porthash = hmac.new(self.password,self.ip_address + strftime("%Y - %m - %d - %H - %M",gmtime()),hashlib.sha512).hexdigest()
+    porthash = hmac.new(self.password,self.ip_address + strftime("%Y - %m - %d - %H - %M",gmtime())+auth_key,hashlib.sha512).hexdigest()
     x=0
     while len(self.ports) < self.authentication_length + 1 :
       temp_port = int(porthash[x:x+4],16)
       if temp_port > 1024 and temp_port not in self.ignore_ports:
         self.ports.append(temp_port)
-      x = x + 5  
+      x = x + 5    
 #Whacker Class is ended here
-# hmac.new("",time.strftime("%Y - %m - %d - %H - %M",time.localtime()),hashlib.sha256).hexdigest()
