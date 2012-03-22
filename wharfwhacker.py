@@ -31,7 +31,8 @@ class WharfWhacker:
     self.whack_threshhold = int(attributes['whack_threshhold'])
     self.ignore_ports = self.secured_ports + self.safe_ports
     self.authentication_length = int(attributes['knocks'])
-    if attributes['auth_token_key'] != "":
+    self.auth_token_key = False
+    if 'auth_token_key' in attributes:
       self.auth_token_key = attributes['auth_token_key'].decode("hex")
     self.connection_sockets = []
     self.check_these_ports = []
