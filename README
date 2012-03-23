@@ -32,3 +32,11 @@ WharfWhacked (This is the banlist)
 From there any udp traffic goes through WharfWhacked, unless it is banned it will go to whatever port it is supposed to.
 Any tcp traffic that is a protected port is sent to the WharfWhacker chain, where unless the ip-address is accepted it will be dropped.
 
+This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 United States License.
+CC-NC-SA-3.0-US
+
+
+If you do want to do something commercial with this software please contact me, and after I try to talk you out of it I will gladly
+offer a seperate license for your use. 
+
+
