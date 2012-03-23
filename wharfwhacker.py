@@ -1,13 +1,6 @@
 #!/usr/bin/env python
-import socket
-import select
-import sys
-import subprocess
-import hashlib
-import hmac
-import os
-import random
-from time import strftime, gmtime, sleep
+import socket, select, sys, subprocess, hashlib, hmac, os, random
+from time import strftime, gmtime, sleep, localtime
 
 class WharfWhacker:
   def __init__(self, config_file = "wharfwhacker.conf"):
@@ -165,10 +158,9 @@ class WharfWhacker:
       
   def auth_token_value(self):
     if self.auth_token_key:
-      return hmac.new(self.auth_token_key,strftime("%Y - %m - %d - %H - %M",gmtime()),hashlib.sha256).hexdigest()[0:8]
+      return hmac.new(self.auth_token_key,strftime("%Y - %m - %d - %H - %M",localtime()),hashlib.sha256).hexdigest()[0:8]
     else:
       return ""
-    
 #WharfWhacker Class is ended here    
 
 class Whacker():
